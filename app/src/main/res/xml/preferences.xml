@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+	<PreferenceCategory android:title="@string/serial_port">
+		<ListPreference
+			android:title="@string/serial_port_preference"
+            android:summary="This preference allows to select an item in a array"
+            android:key="@string/serial_port_key"/>
+        <CheckBoxPreference
+        	android:title="@string/enable_echo" 
+        	android:key="@string/echo_key"
+        	android:summaryOn="@string/echo_enabled"
+        	android:summaryOff="@string/echo_disabled"
+        	android:defaultValue="false"/>
+	</PreferenceCategory>
+	<PreferenceCategory android:title="@string/serial_parameters">
+		<ListPreference
+			android:title="@string/baud_rate_preference"
+            android:summary="This preference allows to select an item in a array"
+            android:key="@string/baud_rate_key"
+            android:defaultValue="@string/baud_rate_default"
+            android:entries="@array/baud_rate_values"
+            android:entryValues="@array/baud_rate_values"/>
+        <ListPreference
+			android:title="@string/data_bits_preference"
+            android:summary="This preference allows to select an item in a array"
+            android:key="@string/data_bits_key"
+            android:defaultValue="@string/data_bits_default"
+            android:entries="@array/data_bits_values"
+            android:entryValues="@array/data_bits_values"/>
+        <ListPreference
+			android:title="@string/stop_bits_preference"
+            android:summary="This preference allows to select an item in a array"
+            android:key="@string/stop_bits_key"
+            android:defaultValue="@string/stop_bits_default"
+            android:entries="@array/stop_bits_values"
+            android:entryValues="@array/stop_bits_values"/>
+        <ListPreference
+			android:title="@string/parity_preference"
+            android:summary="This preference allows to select an item in a array"
+            android:key="@string/parity_key"
+            android:defaultValue="@string/parity_default"
+            android:entries="@array/parity_entries"
+            android:entryValues="@array/parity_values"/>
+        <ListPreference
+			android:title="@string/flow_control_preference"
+            android:summary="This preference allows to select an item in a array"
+            android:key="@string/flow_control_key"
+            android:defaultValue="@string/flow_control_default"
+            android:entries="@array/flow_control_entries"
+            android:entryValues="@array/flow_control_values"/>
+	</PreferenceCategory>
+</PreferenceScreen>

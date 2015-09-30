@@ -1,0 +1,678 @@
+package com.example.android.serialconsole;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.TooManyListenersException;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.gnu.io.CommPortIdentifier;
+import android.gnu.io.NoSuchPortException;
+import android.gnu.io.PortInUseException;
+import android.gnu.io.SerialPort;
+import android.gnu.io.SerialPortEvent;
+import android.gnu.io.SerialPortEventListener;
+import android.gnu.io.UnsupportedCommOperationException;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.preference.PreferenceManager;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnTouchListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+/**
+ * This application demonstrates how to use the Serial Port API.
+ *
+ * Application opens a bi-directional Serial Port connection with a set of configurable parameters.
+ *
+ * User will be able to view all incoming serial port data as well as write messages back. Basic data processing
+ * is provided to discard not legible characters.
+ *
+ */
+public class SerialConsole extends Activity implements SerialPortEventListener {
+	
+	// Constants
+	private static final int DATA_RECEIVED = 0;
+	private static final int BACKSPACE_RECEIVED = 1;
+	private static final int UPDATE_STATUS_TEXT = 2;
+	private static final int SHOW_TOAST = 3;
+	private static final int DISABLE_SEND = 4;
+	private static final int ENABLE_SEND = 5;
+	private static final int TOGGLE_CONNECT_BUTTON = 6;
+	private static final int PREFERENCES_ACTIVITY_ID = 1337;
+	
+	private static final String NEW_LINE = "\r\n";
+	private static final String CONNECTION_STATUS = "connection_status";
+	private static final String CONSOLE_TEXT = "console_text";
+	private static final String TEXT_TO_SEND = "text_to_send";
+	
+	// UI Elements
+	private TextView console;
+	private TextView statusText;
+	
+	private EditText inputText;
+	
+	private ScrollView scroll;
+	
+	private Button sendButton;
+	
+	private ImageButton settingsButton;
+	private ImageButton clearConsoleButton;
+	private ImageButton clearInputButton;
+	private ImageButton connectButton;
+	
+	// Variables
+	private int baudRate;
+	private int dataBits;
+	private int stopBits;
+	private int parity;
+	private int flowControl;
+	
+	private boolean connected = false;
+	private boolean echoEnabled = false;
+	
+	private InputStream is;
+	
+	private OutputStream os;
+	
+	private SerialPort serialPort;
+	
+	private CommPortIdentifier identifier;
+	
+	private String port;
+	
+	/** This handler takes care of UI actions called from listeners or call-backs **/
+	public Handler handler = new Handler() {
+		
+		/*
+		 * (non-Javadoc)
+		 * @see android.os.Handler#handleMessage(android.os.Message)
+		 */
+        public void handleMessage(Message msg) {
+        	switch (msg.what) {
+        	case DATA_RECEIVED:
+        		String message = processBuffer((byte[]) msg.obj);
+        		console.append(message);
+        		scroll.fullScroll(View.FOCUS_DOWN);
+        		break;
+        	case BACKSPACE_RECEIVED:
+        		String text = console.getText().toString();
+        		if (text != null && text.length() > 0)
+        			console.setText(text.substring(0, text.length() - 1));
+        		scroll.fullScroll(View.FOCUS_DOWN);
+        		break;
+        	case UPDATE_STATUS_TEXT:
+        		updateStatusMessage();
+        		break;
+        	case SHOW_TOAST:
+        		Toast.makeText(getBaseContext(), (String)msg.obj, Toast.LENGTH_SHORT).show();
+        		break;
+        	case DISABLE_SEND:
+        		sendButton.setEnabled(false);
+        		break;
+        	case ENABLE_SEND:
+        		sendButton.setEnabled(true);
+        		break;
+        	case TOGGLE_CONNECT_BUTTON:
+        		toggleConnectButton();
+        		break;
+        	}
+        }
+	};
+	
+    /*
+     * (non-Javadoc)
+     * @see android.app.Activity#onCreate(android.os.Bundle)
+     */
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.console);
+        
+        initializeUI();
+        if (savedInstanceState == null)
+        	openPreferencesActivity(settingsButton);
+        else
+        	restoreStatus(savedInstanceState);
+    }
+    
+    /**
+     * Initializes all graphic UI elements and sets the required listeners.
+     */
+    private void initializeUI() {
+    	console = (TextView)findViewById(R.id.console_terminal);
+    	statusText = (TextView)findViewById(R.id.status_text);
+        scroll = (ScrollView)findViewById(R.id.scroll_console_terminal);
+        inputText = (EditText)findViewById(R.id.input_text);
+        sendButton = (Button)findViewById(R.id.send_terminal_button);
+        settingsButton = (ImageButton)findViewById(R.id.settings_button);
+        clearConsoleButton = (ImageButton)findViewById(R.id.clear_console_button);
+        connectButton = (ImageButton)findViewById(R.id.connect_button);
+        clearInputButton = (ImageButton)findViewById(R.id.clear_send_text_button);
+        // Add connect button touch listener
+        connectButton.setOnTouchListener(new OnTouchListener() {
+			public boolean onTouch(View v, MotionEvent event) {
+				switch (event.getAction()) {
+				case MotionEvent.ACTION_UP:
+					if (connected)
+	            		closeConnection();
+	            	else
+	            		openConnection();
+					handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
+					break;
+				case MotionEvent.ACTION_DOWN:
+					connectButton.setPressed(true);
+					break;
+				}
+				return true;
+			}
+		});
+    }
+    
+    /**
+     * Initializes serial port.
+     * 
+     * @return True if success, false otherwise.
+     */
+    private boolean initializeSerialPort() {
+    	String error = "Connection Error: ";
+		try {
+			identifier = CommPortIdentifier.getPortIdentifier(port);
+			serialPort = (SerialPort)identifier.open("SerialConsolePort", 3000);
+			serialPort.addEventListener(this);
+			serialPort.notifyOnDataAvailable(true);
+			serialPort.notifyOnCTS(true);
+			serialPort.notifyOnDSR(true);
+			serialPort.notifyOnRingIndicator(true);
+			serialPort.notifyOnBreakInterrupt(true);
+			serialPort.notifyOnCarrierDetect(true);
+			serialPort.notifyOnFramingError(true);
+			serialPort.notifyOnOverrunError(true);
+			serialPort.notifyOnParityError(true);
+			serialPort.setSerialPortParams(baudRate, dataBits, stopBits, parity);
+			serialPort.setFlowControlMode(flowControl);
+			is = serialPort.getInputStream();
+			os = serialPort.getOutputStream();
+			return true;
+		} catch (NoSuchPortException e) {
+			e.printStackTrace();
+			error += "Port " + port + " does not exist.";
+		} catch (PortInUseException e) {
+			e.printStackTrace();
+			error += "Port " + port + " is in use.";
+		} catch (TooManyListenersException e) {
+			e.printStackTrace();
+			error += "Could not add serial port listener.";
+		} catch (UnsupportedCommOperationException e) {
+			e.printStackTrace();
+			error += "Could not set serial port parameters.";
+		} catch (IOException e) {
+			e.printStackTrace();
+			error += "Could not declate serial port streams.";
+		}
+		Message msg = new Message();
+		msg.what = SHOW_TOAST;
+		handler.sendMessage(msg);
+		return false;
+    }
+    
+    /*
+     * (non-Javadoc)
+     * @see android.app.Activity#onDestroy()
+     */
+    public void onDestroy() {
+    	closeConnection();
+    	super.onDestroy();
+    }
+
+    /*
+     * (non-Javadoc)
+     * @see android.app.Activity#onCreateOptionsMenu(android.view.Menu)
+     */
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+    	MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.layout.menu_console, menu);
+        return true;
+    }
+
+    /*
+     * (non-Javadoc)
+     * @see android.app.Activity#onOptionsItemSelected(android.view.MenuItem)
+     */
+    public boolean onOptionsItemSelected(MenuItem item) {
+    	// Connect button status is lost after executing another activity, restore it.
+    	handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
+    	switch (item.getItemId()) {
+            case R.id.menu_option_close_terminal:
+            	finish();
+                return true;
+            case R.id.menu_option_clear_terminal:
+            	clearConsole(clearConsoleButton);
+                return true;
+            case R.id.menu_option_settings_terminal:
+            	openPreferencesActivity(settingsButton);
+            	return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    /**
+     * Reads data from the serial port and prints it in the console.
+     */
+    private void readData() {
+    	try {
+    		int available = is.available();
+			if (available > 0) {
+				byte[] readBuffer = new byte[available];
+				int numBytes = is.read(readBuffer, 0, available);
+				if (numBytes <= 0)
+					return;
+				if (echoEnabled)
+					sendEcho(readBuffer);
+				Message message = new Message();
+				message.obj = readBuffer;
+				message.what = DATA_RECEIVED;
+				handler.sendMessage(message);
+			}
+		} catch (IOException ex) {}
+    }
+    
+    /**
+     * Sends echo back to the serial port. Buffer is parsed looking
+     * for alone Carrier Return bytes in order to insert Line Feed bytes.
+     * 
+     * @param buffer Byte buffer to send using echo.
+     */
+    private void sendEcho(byte[] buffer) {
+    	try {
+    		boolean previousWasCR = false;
+    		for (byte readByte:buffer) {
+    			if (os == null)
+    				break;
+    			// Insert Line Feed line for alone Carrier Return bytes
+    			if (previousWasCR && readByte != (byte)10) {
+    				os.write((byte)10);
+    				previousWasCR = false;
+    			}
+    			os.write(readByte);
+    			if (readByte == (byte)13)
+    				previousWasCR = true;
+    			else if (readByte == (byte)10)
+    				previousWasCR = false;
+    		}
+    		// Check if last byte in buffer was Carrier Return and if so append Line Feed
+    		if (previousWasCR)
+    			os.write((byte)10);
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    	}
+    }
+    
+    /**
+     * Process the given byte array returning a readable string. Alone
+     * Carrier Return bytes are replaced by Carrier Return + Line Feed.
+     * 
+     * @param buffer Byte buffer to process.
+     * @return Resulting readable string.
+     */
+    private String processBuffer(byte[] buffer) {
+    	// Basic processing for new line, carriage return, backspace, tab and normal chars
+    	StringBuilder sb = new StringBuilder();
+    	boolean previousWasCR = false;
+    	for (byte readByte:buffer) {
+    		// Insert Line Feed byte for alone Carrier Return bytes
+    		if ((readByte != (byte)10) && previousWasCR) {
+    			sb.append("\n");
+    			previousWasCR = false;
+    		}
+    		if (readByte > 31 && readByte < 128) // Print readable characters
+    			sb.append((char)readByte);
+    		else if (readByte == (byte)9) // Replace tab characters
+    			sb.append("	");
+    		else if (readByte == (byte)10) { // Insert line feed
+    			sb.append("\n");
+    			previousWasCR = false;
+    		} else if (readByte == (byte)13) { // Insert carrier return
+    			sb.append("\r");
+    			previousWasCR = true;
+    		} else if (readByte == (byte)8) { // Perform backspace
+    			if (sb.length() == 0)
+    				handler.sendEmptyMessage(BACKSPACE_RECEIVED);
+    			else
+    				sb.deleteCharAt(sb.length() - 1);
+    		}
+    	}
+    	// Check if last byte in buffer was Carrier Return and if so append Line Feed
+    	if (previousWasCR)
+    		sb.append("\n");
+    	return sb.toString();
+    }
+    
+    /**
+     * Writes the data from the input text field to the serial port.
+     * 
+     * @param view View which called this method.
+     */
+	public void writeData(View view) {
+		if (inputText.getText().toString().equals("") || serialPort == null || os == null)
+			return;
+		try {
+			os.write((inputText.getText().toString().replace("\n", "\r\n") + NEW_LINE).getBytes());
+			os.write((byte)13);
+			clearInputText(clearInputButton);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Loads the serial console preferences and stores them in the application 
+	 * instance. Returns true if connection settings have changed.
+	 * 
+	 * @return True if connection settings have changed, false otherwise.
+	 */
+	private boolean loadPreferences() {
+		boolean changed = false;
+		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		String newPort = preferences.getString(getString(R.string.serial_port_key), null);
+		if (port == null || !port.equals(newPort)) {
+			port = newPort;
+			changed = true;
+		}
+		int newBaudRate = Integer.valueOf(preferences.getString(getString(R.string.baud_rate_key), null));  
+		if (baudRate != newBaudRate) {
+			baudRate = newBaudRate;
+			changed = true;
+		}
+		int newDataBits = Integer.valueOf(preferences.getString(getString(R.string.data_bits_key), null));
+		if (dataBits != newDataBits) {
+			dataBits = newDataBits;
+			changed = true;
+		}
+		int newStopBits = Integer.valueOf(preferences.getString(getString(R.string.stop_bits_key), null)); 
+		if (stopBits != newStopBits) {
+			stopBits = newStopBits;
+			changed = true;
+		}
+		int newParity = Integer.valueOf(preferences.getString(getString(R.string.parity_key), null));
+		if (parity != newParity) {
+			parity = newParity;
+			changed = true;
+		}
+		int newFlowControl = Integer.valueOf(preferences.getString(getString(R.string.flow_control_key), null)); 
+		if (flowControl != newFlowControl) {
+			flowControl = newFlowControl;
+			changed = true;
+		}
+		echoEnabled = preferences.getBoolean(getString(R.string.echo_key), false);
+		return changed;
+	}
+
+	/**
+	 * Closes serial port connection.
+	 */
+	private void closeConnection() {
+		connected = false;
+		handler.sendEmptyMessage(DISABLE_SEND);
+		handler.sendEmptyMessage(UPDATE_STATUS_TEXT);
+		handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
+		if (serialPort != null)
+			serialPort.removeEventListener();
+		if (serialPort != null)
+			serialPort.close();
+		try {
+			if (os != null)
+				os.close();
+			if (is != null)
+				is.close();
+		} catch (IOException e) { }
+		serialPort = null;
+		os = null;
+		is = null;
+	}
+	
+	/**
+	 * Opens serial port connection.
+	 */
+	private void openConnection() {
+		if (!initializeSerialPort())
+			return;
+		clearConsole(clearConsoleButton);
+		connected = true;
+		handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
+		handler.sendEmptyMessage(UPDATE_STATUS_TEXT);
+		handler.sendEmptyMessage(ENABLE_SEND);
+	}
+
+	/**
+	 * Clears the contents of the serial console.
+	 * 
+	 * @param view View which called this method.
+	 */
+	public void clearConsole(View view) {
+		console.setText("");
+	}
+	
+	/**
+	 * Clears the text to be sent in the input text control.
+	 * 
+	 * @param view View which called this method.
+	 */
+	public void clearInputText(View view) {
+		inputText.setText("");
+	}
+
+	/**
+	 * Starts the serial console preferences activity.
+	 * 
+	 * @param view View which called this method.
+	 */
+    public void openPreferencesActivity(View view) {
+    	startActivityForResult(new Intent(this,Preferences.class), PREFERENCES_ACTIVITY_ID);
+    }
+    
+    /**
+     * Updates serial console status text.
+     */
+    private void updateStatusMessage() {
+    	String text = "";
+    	if (connected)
+    		text = "PORT OPEN @ ";
+    	else
+    		text = "PORT CLOSED @ ";
+    	text += port + " - PARAMS: " + baudRate + ", " + dataBits + ", " +
+    			stopBits + ", " + getParityString() + ", " + getFlowControlString() +
+    			" - Echo ";
+    	if (echoEnabled)
+    		text += "enabled";
+    	else
+    		text += "disabled";
+    	statusText.setText(text);
+    	if (connected)
+    		statusText.setTextColor(getResources().getColor(R.color.light_green));
+    	else
+    		statusText.setTextColor(getResources().getColor(R.color.light_red));
+    }
+    
+    /**
+     * Toggles connect button changing its icon and background.
+     */
+    private void toggleConnectButton() {
+    	if (connected) {
+    		connectButton.setImageResource(R.drawable.port_connected);
+    		connectButton.setPressed(true);
+    	} else {
+    		connectButton.setImageResource(R.drawable.port_disconnected);
+    		connectButton.setPressed(false);
+    	}
+    }
+    
+    /**
+     * Restores the application status with the given saved values.
+     * 
+     * @param status Bundle containing application saved status.
+     */
+    private void restoreStatus(Bundle status) {
+    	loadPreferences();
+    	connected = status.getBoolean(CONNECTION_STATUS);
+    	String consoleText = status.getString(CONSOLE_TEXT);
+    	String textToSend = status.getString(TEXT_TO_SEND);
+    	console.setText(consoleText);
+    	inputText.setText(textToSend);
+    	if (connected)
+    		openConnection();
+    	else
+    		handler.sendEmptyMessage(DISABLE_SEND);
+    	handler.sendEmptyMessage(UPDATE_STATUS_TEXT);
+    	handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
+    }
+    
+    /*
+     * (non-Javadoc)
+     * @see android.app.Activity#onActivityResult(int, int, android.content.Intent)
+     */
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    	super.onActivityResult(requestCode, resultCode, data);
+    	if (requestCode != PREFERENCES_ACTIVITY_ID)
+    		return;
+    	if (loadPreferences()) {
+    		if (connected)
+    			closeConnection();
+    		openConnection();
+    	}
+    	// Connect button status is lost after executing another activity, restore it.
+    	handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
+    	handler.sendEmptyMessage(UPDATE_STATUS_TEXT);
+    }
+
+    /*
+     * (non-Javadoc)
+     * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
+     */
+    protected void onSaveInstanceState(Bundle outState) {
+    	super.onSaveInstanceState(outState);
+    	outState.putBoolean(CONNECTION_STATUS, connected);
+    	outState.putString(CONSOLE_TEXT, console.getText().toString());
+    	outState.putString(TEXT_TO_SEND, inputText.getText().toString());
+    }
+    
+	/*
+	 * (non-Javadoc)
+	 * @see android.gnu.io.SerialPortEventListener#serialEvent(android.gnu.io.SerialPortEvent)
+	 */
+    public void serialEvent(SerialPortEvent ev) {
+    	String message = null;
+    	switch (ev.getEventType()) {
+    	case SerialPortEvent.BI:
+    		message = "Break interrupt received.";
+    		break;
+    	case SerialPortEvent.CD:
+    		closeConnection();
+    		message = "Carrier detect received.";
+    		break;
+    	case SerialPortEvent.CTS:
+    		message = "CTS line activated.";
+    		break;
+    	case SerialPortEvent.DSR:
+    		message = "DSR line activated.";
+    		break;
+    	case SerialPortEvent.RI:
+    		message = "Ring indicator received.";
+    		break;	
+    	case SerialPortEvent.FE:
+    		message = "Received framing error.";
+    		break;
+    	case SerialPortEvent.PE:
+    		message = "Received parity error.";
+    		break;
+    	case SerialPortEvent.OE:
+    		closeConnection();
+    		message = "Connection Closed: buffer overrun error.";
+    		break;
+    	case SerialPortEvent.DATA_AVAILABLE:
+    		try {
+    			is.available();
+    		} catch (Exception e) {
+    			// This only happens with USB connections but just in case
+    			closeConnection();
+    			message = "Connection Closed: Connection closed in the other side.";
+    			break;
+    		}
+    		readData();
+    		break;
+    	}
+    	if (message != null) {
+    		Message msg = new Message();
+    		msg.what = SHOW_TOAST;
+    		msg.obj = message;
+    		handler.sendMessage(msg);
+    	}
+    }
+    
+    /**
+     * Retrieves the parity readable string based in its value.
+     * 
+     * @return String with readable parity value.
+     */
+    private String getParityString() {
+    	String parityString = "";
+    	switch (parity) {
+    	case SerialPort.PARITY_EVEN:
+    		parityString = "Even";
+    		break;
+    	case SerialPort.PARITY_MARK:
+    		parityString = "Mark";
+    		break;
+    	case SerialPort.PARITY_NONE:
+    		parityString = "None";
+    		break;
+    	case SerialPort.PARITY_ODD:
+    		parityString = "Odd";
+    		break;
+    	case SerialPort.PARITY_SPACE:
+    		parityString = "Space";
+    		break;
+    	}
+    	return parityString;
+    }
+    
+    /**
+     * Retrieves the flow control readable string based in its value.
+     * 
+     * @return String with readable flow control value.
+     */
+    private String getFlowControlString() {
+    	String flowControlString = "";
+    	switch (flowControl) {
+    	case SerialPort.FLOWCONTROL_NONE:
+    		flowControlString = "None";
+    		break;
+    	case SerialPort.FLOWCONTROL_RTSCTS_IN:
+    		flowControlString = "RTS/CTS In";
+    		break;
+    	case SerialPort.FLOWCONTROL_RTSCTS_OUT:
+    		flowControlString = "RTS/CTS Out";
+    		break;
+    	case SerialPort.FLOWCONTROL_XONXOFF_IN:
+    		flowControlString = "XON/XOFF In";
+    		break;
+    	case SerialPort.FLOWCONTROL_XONXOFF_OUT:
+    		flowControlString = "XON/XOFF Out";
+    		break;
+    	}
+    	return flowControlString;
+    }
+}
