@@ -1,4 +1,4 @@
-package com.example.android.serialconsole;
+package com.digi.android.serialconsole;
 
 import java.util.ArrayList;
 import java.util.Enumeration;

@@ -1,4 +1,4 @@
-package com.example.android.serialconsole;
+package com.digi.android.serialconsole;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,11 +35,11 @@ import android.widget.Toast;
 /**
  * This application demonstrates how to use the Serial Port API.
  *
- * Application opens a bi-directional Serial Port connection with a set of configurable parameters.
+ * <p> The application opens a bi-directional Serial Port connection with a set
+ * of configurable parameters.</p>
  *
- * User will be able to view all incoming serial port data as well as write messages back. Basic data processing
- * is provided to discard not legible characters.
- *
+ * <p>Users can view all incoming serial port data and write messages back.
+ * Basic data processing is provided to discard not legible characters.</p>
  */
 public class SerialConsole extends Activity implements SerialPortEventListener {
 	
@@ -219,7 +219,7 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 			error += "Could not set serial port parameters.";
 		} catch (IOException e) {
 			e.printStackTrace();
-			error += "Could not declate serial port streams.";
+			error += "Could not declare serial port streams.";
 		}
 		Message msg = new Message();
 		msg.what = SHOW_TOAST;
