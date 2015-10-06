@@ -11,10 +11,8 @@ Demo requirements
 To run this example you need:
 
 * One compatible device to host the application.
-* Network connection between the device and the host PC in order to transfer
-  and launch the application.
-* Establish remote target connection to your Digi hardware before running this
-  application.
+* A USB connection between the device and the host PC in order to transfer and
+  launch the application.
 * A serial connection between the device and another machine (PC for example)
   using a serial cable.
 
@@ -24,8 +22,7 @@ Demo setup
 Make sure the hardware is set up correctly:
 
 1. The device is powered on.
-2. The device is connected directly to the PC or to the Local Area Network (LAN)
-   by the Ethernet cable.
+2. The device is connected directly to the PC by the micro USB cable.
 3. There is a serial connection between the device and another machine. You need
    to use the J29 UART connector and setup the application to `/dev/ttymxc0`,
    `/dev/ttymxc2` or `/dev/ttymxc4` to successfully run this application.
@@ -61,12 +58,8 @@ At the bottom, a toolbar allows the following actions:
 * **Send message**: Sends a message to the other machine using the serial
   connection.
 
-Tested on
----------
+Compatible with
+---------------
 
-* ConnectCore Wi-i.MX51
-* ConnectCore Wi-i.MX53
-* ConnectCard for i.MX28
-* ConnectCore 6 Adapter Board
 * ConnectCore 6 SBC
 * ConnectCore 6 SBC v2
