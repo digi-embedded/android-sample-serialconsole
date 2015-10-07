@@ -107,8 +107,10 @@
 <string name="initial_text_console_terminal">Serial Port Started.....\n</string>
 <string name="send_terminal">SEND</string>
 <string name="close_terminal">Close Console</string>
+<string name="open_terminal">Open Console</string>
 <string name="settings">Settings</string>
 <string name="clear_terminal">Clear Terminal</string>
+<string name="clear_text_send">Clear</string>
 <string name="text_send">Text to send...</string>
 <color name="dark_gray">#5f5f5f</color>
 <color name="light_red">#ffadad</color>

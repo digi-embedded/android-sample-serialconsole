@@ -1,3 +1,14 @@
+/**
+ * Copyright (c) 2014-2015 Digi International Inc.,
+ * All rights not expressly granted are reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Digi International Inc. 11001 Bren Road East, Minnetonka, MN 55343
+ * =======================================================================
+ */
 package com.digi.android.serialconsole;
 
 import java.util.ArrayList;
@@ -14,9 +25,9 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 
-public class Preferences extends PreferenceActivity implements OnSharedPreferenceChangeListener{
+public class Preferences extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 
-	// Constants
+	// Constants.
 	private final static int SERIAL_PORT_KEY = R.string.serial_port_key;
 	private final static int BAUD_RATE_KEY = R.string.baud_rate_key;
 	private final static int DATA_BITS_KEY = R.string.data_bits_key;
@@ -24,7 +35,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	private final static int PARITY_KEY = R.string.parity_key;
 	private final static int FLOW_CONTROL_KEY = R.string.flow_control_key;
 	
-	// Variables
+	// Variables.
 	private static ArrayList<Integer> listPreferencesKeys = new ArrayList<Integer>();
 	static {
 		listPreferencesKeys.add(SERIAL_PORT_KEY);
@@ -35,7 +46,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		listPreferencesKeys.add(FLOW_CONTROL_KEY);
 	}
 	
-	// Search for available ports and store them in static array
+	// Search for available ports and store them in static array.
 	private static CharSequence[] portList;
 	static {
 		Enumeration<?> availablePorts = CommPortIdentifier.getPortIdentifiers();
@@ -48,29 +59,40 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	}
 	
 	private HashMap<String, ListPreference> listPreferences = new HashMap<String, ListPreference>();
-	
-	// UI elements
-	private Button closeButton;
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see android.preference.PreferenceActivity#onCreate(android.os.Bundle)
 	 */
+	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
 		addPreferencesFromResource(R.xml.preferences);
 		setContentView(R.layout.preferences_dialog);
-		
+
 		setTitle(getString(R.string.serial_console_preferences));
 		initializePreferences();
-		
-		closeButton = (Button)super.findViewById(R.id.close_button);
+
+		Button closeButton = (Button)super.findViewById(R.id.close_button);
 		closeButton.setOnClickListener(new OnClickListener() {
+			@Override
 			public void onClick(View v) {
 				closePressed();
 			}
 		});
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see android.content.SharedPreferences.OnSharedPreferenceChangeListener#onSharedPreferenceChanged(android.content.SharedPreferences, java.lang.String)
+	 */
+	@Override
+	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+		ListPreference listPref = listPreferences.get(key);
+		if (listPref == null)
+			return;
+		listPref.setSummary(listPref.getEntry());
 	}
 
 	/**
@@ -96,8 +118,9 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	}
 
 	/**
-	 * Fills serial port preference. Possible values are read from COM port identifiers
-	 * and if setting has no default value or value they are also filled up.
+	 * Fills serial port preference. Possible values are read from COM port
+	 * identifiers and if setting has no default value or value they are also
+	 * filled up.
 	 * 
 	 * @param pref Serial port preference.
 	 */
@@ -108,16 +131,5 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			pref.setValue(portList[0].toString());
 		pref.setEntries(portList);
 		pref.setEntryValues(portList);
-	}
-	
-	/*
-	 * (non-Javadoc)
-	 * @see android.content.SharedPreferences.OnSharedPreferenceChangeListener#onSharedPreferenceChanged(android.content.SharedPreferences, java.lang.String)
-	 */
-	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-		ListPreference listPref = listPreferences.get(key);
-		if (listPref == null)
-			return;
-		listPref.setSummary(listPref.getEntry());
 	}
 }

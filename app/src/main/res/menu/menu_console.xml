@@ -4,14 +4,11 @@
 
 <item android:id="@+id/menu_option_close_terminal"
       android:title="@string/close_terminal"
-      android:icon="@android:drawable/ic_menu_close_clear_cancel">
-      </item>
+      android:icon="@android:drawable/ic_menu_close_clear_cancel"/>
 <item android:id="@+id/menu_option_clear_terminal"
       android:title="@string/clear_terminal"
-      android:icon="@android:drawable/ic_menu_delete"
-      ></item>
+      android:icon="@android:drawable/ic_menu_delete"/>
 <item android:id="@+id/menu_option_settings_terminal"
       android:title="@string/settings"
-      android:icon="@android:drawable/ic_menu_manage"
-      ></item>
+      android:icon="@android:drawable/ic_menu_manage"/>
 </menu>

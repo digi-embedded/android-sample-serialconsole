@@ -1,8 +1,20 @@
+/**
+ * Copyright (c) 2014-2015 Digi International Inc.,
+ * All rights not expressly granted are reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Digi International Inc. 11001 Bren Road East, Minnetonka, MN 55343
+ * =======================================================================
+ */
 package com.digi.android.serialconsole;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.WeakReference;
 import java.util.TooManyListenersException;
 
 import android.app.Activity;
@@ -20,10 +32,10 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.widget.Button;
 import android.widget.EditText;
@@ -33,17 +45,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 /**
- * This application demonstrates how to use the Serial Port API.
+ * Serial Console sample application.
  *
- * <p> The application opens a bi-directional Serial Port connection with a set
- * of configurable parameters.</p>
+ * <p>This example opens a bi-directional Serial Port connection with a set
+ * of configurable parameters using the Serial Port API.</p>
  *
- * <p>Users can view all incoming serial port data and write messages back.
- * Basic data processing is provided to discard not legible characters.</p>
+ * <p>For a complete description on the example, refer to the 'README.md' file
+ * included in the example directory.</p>
  */
 public class SerialConsole extends Activity implements SerialPortEventListener {
 	
-	// Constants
+	// Constants.
 	private static final int DATA_RECEIVED = 0;
 	private static final int BACKSPACE_RECEIVED = 1;
 	private static final int UPDATE_STATUS_TEXT = 2;
@@ -57,8 +69,10 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 	private static final String CONNECTION_STATUS = "connection_status";
 	private static final String CONSOLE_TEXT = "console_text";
 	private static final String TEXT_TO_SEND = "text_to_send";
-	
-	// UI Elements
+
+	// Variables.
+
+	// UI Elements.
 	private TextView console;
 	private TextView statusText;
 	
@@ -67,13 +81,10 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 	private ScrollView scroll;
 	
 	private Button sendButton;
-	
-	private ImageButton settingsButton;
-	private ImageButton clearConsoleButton;
-	private ImageButton clearInputButton;
+
 	private ImageButton connectButton;
 	
-	// Variables
+	// Variables.
 	private int baudRate;
 	private int dataBits;
 	private int stopBits;
@@ -89,17 +100,61 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 	
 	private SerialPort serialPort;
 	
-	private CommPortIdentifier identifier;
-	
 	private String port;
-	
-	/** This handler takes care of UI actions called from listeners or call-backs **/
-	public Handler handler = new Handler() {
-		
-		/*
-		 * (non-Javadoc)
-		 * @see android.os.Handler#handleMessage(android.os.Message)
-		 */
+
+	private IncomingHandler handler = new IncomingHandler(this);
+
+	/**
+	 * Handler to manage UI calls from different threads.
+	 */
+	static class IncomingHandler extends Handler {
+		private final WeakReference<SerialConsole> wActivity;
+
+		IncomingHandler(SerialConsole activity) {
+			wActivity = new WeakReference<SerialConsole>(activity);
+		}
+
+		@Override
+		public void handleMessage(Message msg) {
+			SerialConsole serialConsole = wActivity.get();
+
+			if (serialConsole == null)
+				return;
+
+			switch (msg.what) {
+				case DATA_RECEIVED:
+					String message = serialConsole.processBuffer((byte[]) msg.obj);
+					serialConsole.console.append(message);
+					serialConsole.scroll.fullScroll(View.FOCUS_DOWN);
+					break;
+				case BACKSPACE_RECEIVED:
+					String text = serialConsole.console.getText().toString();
+					if (text.length() > 0)
+						serialConsole.console.setText(text.substring(0, text.length() - 1));
+					serialConsole.scroll.fullScroll(View.FOCUS_DOWN);
+					break;
+				case UPDATE_STATUS_TEXT:
+					serialConsole.updateStatusMessage();
+					break;
+				case SHOW_TOAST:
+					Toast.makeText(serialConsole.getBaseContext(), (String)msg.obj, Toast.LENGTH_SHORT).show();
+					break;
+				case DISABLE_SEND:
+					serialConsole.sendButton.setEnabled(false);
+					break;
+				case ENABLE_SEND:
+					serialConsole.sendButton.setEnabled(true);
+					break;
+				case TOGGLE_CONNECT_BUTTON:
+					serialConsole.toggleConnectButton();
+					break;
+			}
+		}
+	}
+
+	/*public Handler handler = new Handler() {
+
+		@Override
         public void handleMessage(Message msg) {
         	switch (msg.what) {
         	case DATA_RECEIVED:
@@ -109,7 +164,7 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
         		break;
         	case BACKSPACE_RECEIVED:
         		String text = console.getText().toString();
-        		if (text != null && text.length() > 0)
+        		if (text.length() > 0)
         			console.setText(text.substring(0, text.length() - 1));
         		scroll.fullScroll(View.FOCUS_DOWN);
         		break;
@@ -130,22 +185,155 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
         		break;
         	}
         }
-	};
+	};*/
 	
     /*
      * (non-Javadoc)
      * @see android.app.Activity#onCreate(android.os.Bundle)
      */
+	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.console);
         
         initializeUI();
         if (savedInstanceState == null)
-        	openPreferencesActivity(settingsButton);
+        	openPreferencesActivity();
         else
         	restoreStatus(savedInstanceState);
     }
+
+	/*
+     * (non-Javadoc)
+     * @see android.app.Activity#onDestroy()
+     */
+	@Override
+	public void onDestroy() {
+		closeConnection();
+		super.onDestroy();
+	}
+
+	/*
+     * (non-Javadoc)
+     * @see android.app.Activity#onCreateOptionsMenu(android.view.Menu)
+     */
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		getMenuInflater().inflate(R.menu.menu_console, menu);
+		return true;
+	}
+
+	/*
+     * (non-Javadoc)
+     * @see android.app.Activity#onOptionsItemSelected(android.view.MenuItem)
+     */
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// Connect button status is lost after executing another activity,
+		// restore it.
+		handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
+		switch (item.getItemId()) {
+			case R.id.menu_option_close_terminal:
+				finish();
+				return true;
+			case R.id.menu_option_clear_terminal:
+				clearConsole();
+				return true;
+			case R.id.menu_option_settings_terminal:
+				openPreferencesActivity();
+				return true;
+			default:
+				return super.onOptionsItemSelected(item);
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see android.gnu.io.SerialPortEventListener#serialEvent(android.gnu.io.SerialPortEvent)
+	 */
+	@Override
+	public void serialEvent(SerialPortEvent ev) {
+		String message = null;
+		switch (ev.getEventType()) {
+			case SerialPortEvent.BI:
+				message = "Break interrupt received.";
+				break;
+			case SerialPortEvent.CD:
+				closeConnection();
+				message = "Carrier detect received.";
+				break;
+			case SerialPortEvent.CTS:
+				message = "CTS line activated.";
+				break;
+			case SerialPortEvent.DSR:
+				message = "DSR line activated.";
+				break;
+			case SerialPortEvent.RI:
+				message = "Ring indicator received.";
+				break;
+			case SerialPortEvent.FE:
+				message = "Received framing error.";
+				break;
+			case SerialPortEvent.PE:
+				message = "Received parity error.";
+				break;
+			case SerialPortEvent.OE:
+				closeConnection();
+				message = "Connection Closed: buffer overrun error.";
+				break;
+			case SerialPortEvent.DATA_AVAILABLE:
+				try {
+					if (is.available() > 0)
+						readData();
+				} catch (Exception e) {
+					// This only happens with USB connections but just in case.
+					closeConnection();
+					message = "Connection Closed: Connection closed in the other side.";
+				}
+				break;
+		}
+		if (message != null) {
+			Message msg = new Message();
+			msg.what = SHOW_TOAST;
+			msg.obj = message;
+			handler.sendMessage(msg);
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see android.app.Activity#onActivityResult(int, int, android.content.Intent)
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		if (requestCode != PREFERENCES_ACTIVITY_ID)
+			return;
+
+		if (loadPreferences()) {
+			if (connected)
+				closeConnection();
+			openConnection();
+		}
+
+		// Connect button status is lost after executing another activity,
+		// restore it.
+		handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
+		handler.sendEmptyMessage(UPDATE_STATUS_TEXT);
+	}
+
+	/*
+     * (non-Javadoc)
+     * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
+     */
+	@Override
+	protected void onSaveInstanceState(@android.support.annotation.NonNull Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putBoolean(CONNECTION_STATUS, connected);
+		outState.putString(CONSOLE_TEXT, console.getText().toString());
+		outState.putString(TEXT_TO_SEND, inputText.getText().toString());
+	}
     
     /**
      * Initializes all graphic UI elements and sets the required listeners.
@@ -155,25 +343,54 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
     	statusText = (TextView)findViewById(R.id.status_text);
         scroll = (ScrollView)findViewById(R.id.scroll_console_terminal);
         inputText = (EditText)findViewById(R.id.input_text);
+
         sendButton = (Button)findViewById(R.id.send_terminal_button);
-        settingsButton = (ImageButton)findViewById(R.id.settings_button);
-        clearConsoleButton = (ImageButton)findViewById(R.id.clear_console_button);
-        connectButton = (ImageButton)findViewById(R.id.connect_button);
-        clearInputButton = (ImageButton)findViewById(R.id.clear_send_text_button);
-        // Add connect button touch listener
+		sendButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				writeData();
+			}
+		});
+
+		ImageButton settingsButton = (ImageButton) findViewById(R.id.settings_button);
+		settingsButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				openPreferencesActivity();
+			}
+		});
+
+		ImageButton clearConsoleButton = (ImageButton)findViewById(R.id.clear_console_button);
+		clearConsoleButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				clearConsole();
+			}
+		});
+
+		ImageButton clearInputButton = (ImageButton)findViewById(R.id.clear_send_text_button);
+		clearInputButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				clearInputText();
+			}
+		});
+
+		connectButton = (ImageButton)findViewById(R.id.connect_button);
         connectButton.setOnTouchListener(new OnTouchListener() {
+			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				switch (event.getAction()) {
-				case MotionEvent.ACTION_UP:
-					if (connected)
-	            		closeConnection();
-	            	else
-	            		openConnection();
-					handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
-					break;
-				case MotionEvent.ACTION_DOWN:
-					connectButton.setPressed(true);
-					break;
+					case MotionEvent.ACTION_UP:
+						if (connected)
+							closeConnection();
+						else
+							openConnection();
+						handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
+						break;
+					case MotionEvent.ACTION_DOWN:
+						connectButton.setPressed(true);
+						break;
 				}
 				return true;
 			}
@@ -183,12 +400,12 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
     /**
      * Initializes serial port.
      * 
-     * @return True if success, false otherwise.
+     * @return {@code true} if success, {@code false} otherwise.
      */
     private boolean initializeSerialPort() {
     	String error = "Connection Error: ";
 		try {
-			identifier = CommPortIdentifier.getPortIdentifier(port);
+			CommPortIdentifier identifier = CommPortIdentifier.getPortIdentifier(port);
 			serialPort = (SerialPort)identifier.open("SerialConsolePort", 3000);
 			serialPort.addEventListener(this);
 			serialPort.notifyOnDataAvailable(true);
@@ -223,50 +440,9 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 		}
 		Message msg = new Message();
 		msg.what = SHOW_TOAST;
+		msg.obj = error;
 		handler.sendMessage(msg);
 		return false;
-    }
-    
-    /*
-     * (non-Javadoc)
-     * @see android.app.Activity#onDestroy()
-     */
-    public void onDestroy() {
-    	closeConnection();
-    	super.onDestroy();
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see android.app.Activity#onCreateOptionsMenu(android.view.Menu)
-     */
-    public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
-    	MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.layout.menu_console, menu);
-        return true;
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see android.app.Activity#onOptionsItemSelected(android.view.MenuItem)
-     */
-    public boolean onOptionsItemSelected(MenuItem item) {
-    	// Connect button status is lost after executing another activity, restore it.
-    	handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
-    	switch (item.getItemId()) {
-            case R.id.menu_option_close_terminal:
-            	finish();
-                return true;
-            case R.id.menu_option_clear_terminal:
-            	clearConsole(clearConsoleButton);
-                return true;
-            case R.id.menu_option_settings_terminal:
-            	openPreferencesActivity(settingsButton);
-            	return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
     }
 
     /**
@@ -287,7 +463,9 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 				message.what = DATA_RECEIVED;
 				handler.sendMessage(message);
 			}
-		} catch (IOException ex) {}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
     }
     
     /**
@@ -302,7 +480,7 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
     		for (byte readByte:buffer) {
     			if (os == null)
     				break;
-    			// Insert Line Feed line for alone Carrier Return bytes
+    			// Insert Line Feed line for alone Carrier Return bytes.
     			if (previousWasCR && readByte != (byte)10) {
     				os.write((byte)10);
     				previousWasCR = false;
@@ -313,7 +491,8 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
     			else if (readByte == (byte)10)
     				previousWasCR = false;
     		}
-    		// Check if last byte in buffer was Carrier Return and if so append Line Feed
+    		// Check if last byte in buffer was Carrier Return
+    		// and if so append Line Feed.
     		if (previousWasCR)
     			os.write((byte)10);
     	} catch (IOException e) {
@@ -329,33 +508,35 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
      * @return Resulting readable string.
      */
     private String processBuffer(byte[] buffer) {
-    	// Basic processing for new line, carriage return, backspace, tab and normal chars
+    	// Basic processing for new line, carriage return, backspace,
+    	// tab and normal chars.
     	StringBuilder sb = new StringBuilder();
     	boolean previousWasCR = false;
     	for (byte readByte:buffer) {
-    		// Insert Line Feed byte for alone Carrier Return bytes
+    		// Insert Line Feed byte for alone Carrier Return bytes.
     		if ((readByte != (byte)10) && previousWasCR) {
     			sb.append("\n");
     			previousWasCR = false;
     		}
-    		if (readByte > 31 && readByte < 128) // Print readable characters
+    		if (readByte > 31) // Print readable characters.
     			sb.append((char)readByte);
-    		else if (readByte == (byte)9) // Replace tab characters
+    		else if (readByte == (byte)9) // Replace tab characters.
     			sb.append("	");
-    		else if (readByte == (byte)10) { // Insert line feed
+    		else if (readByte == (byte)10) { // Insert line feed.
     			sb.append("\n");
     			previousWasCR = false;
-    		} else if (readByte == (byte)13) { // Insert carrier return
+    		} else if (readByte == (byte)13) { // Insert carrier return.
     			sb.append("\r");
     			previousWasCR = true;
-    		} else if (readByte == (byte)8) { // Perform backspace
+    		} else if (readByte == (byte)8) { // Perform backspace.
     			if (sb.length() == 0)
     				handler.sendEmptyMessage(BACKSPACE_RECEIVED);
     			else
     				sb.deleteCharAt(sb.length() - 1);
     		}
     	}
-    	// Check if last byte in buffer was Carrier Return and if so append Line Feed
+    	// Check if last byte in buffer was Carrier Return and if so append
+    	// Line Feed.
     	if (previousWasCR)
     		sb.append("\n");
     	return sb.toString();
@@ -363,16 +544,14 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
     
     /**
      * Writes the data from the input text field to the serial port.
-     * 
-     * @param view View which called this method.
      */
-	public void writeData(View view) {
+	public void writeData() {
 		if (inputText.getText().toString().equals("") || serialPort == null || os == null)
 			return;
 		try {
 			os.write((inputText.getText().toString().replace("\n", "\r\n") + NEW_LINE).getBytes());
 			os.write((byte)13);
-			clearInputText(clearInputButton);
+			clearInputText();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -382,7 +561,8 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 	 * Loads the serial console preferences and stores them in the application 
 	 * instance. Returns true if connection settings have changed.
 	 * 
-	 * @return True if connection settings have changed, false otherwise.
+	 * @return {@code true} if connection settings have changed,
+	 *         {@code false} otherwise.
 	 */
 	private boolean loadPreferences() {
 		boolean changed = false;
@@ -392,31 +572,52 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 			port = newPort;
 			changed = true;
 		}
-		int newBaudRate = Integer.valueOf(preferences.getString(getString(R.string.baud_rate_key), null));  
-		if (baudRate != newBaudRate) {
-			baudRate = newBaudRate;
-			changed = true;
+
+		String sBaudRate = preferences.getString(getString(R.string.baud_rate_key), null);
+		if (sBaudRate != null) {
+			int newBaudRate = Integer.valueOf(sBaudRate);
+			if (baudRate != newBaudRate) {
+				baudRate = newBaudRate;
+				changed = true;
+			}
 		}
-		int newDataBits = Integer.valueOf(preferences.getString(getString(R.string.data_bits_key), null));
-		if (dataBits != newDataBits) {
-			dataBits = newDataBits;
-			changed = true;
+
+		String sDataBits = preferences.getString(getString(R.string.data_bits_key), null);
+		if (sDataBits != null) {
+			int newDataBits = Integer.valueOf(sDataBits);
+			if (dataBits != newDataBits) {
+				dataBits = newDataBits;
+				changed = true;
+			}
 		}
-		int newStopBits = Integer.valueOf(preferences.getString(getString(R.string.stop_bits_key), null)); 
-		if (stopBits != newStopBits) {
-			stopBits = newStopBits;
-			changed = true;
+
+		String sStopBits = preferences.getString(getString(R.string.data_bits_key), null);
+		if (sStopBits != null) {
+			int newStopBits = Integer.valueOf(sStopBits);
+			if (stopBits != newStopBits) {
+				stopBits = newStopBits;
+				changed = true;
+			}
 		}
-		int newParity = Integer.valueOf(preferences.getString(getString(R.string.parity_key), null));
-		if (parity != newParity) {
-			parity = newParity;
-			changed = true;
+
+		String sParity = preferences.getString(getString(R.string.data_bits_key), null);
+		if (sParity != null) {
+			int newParity = Integer.valueOf(sParity);
+			if (parity != newParity) {
+				parity = newParity;
+				changed = true;
+			}
 		}
-		int newFlowControl = Integer.valueOf(preferences.getString(getString(R.string.flow_control_key), null)); 
-		if (flowControl != newFlowControl) {
-			flowControl = newFlowControl;
-			changed = true;
+
+		String sFlowControl = preferences.getString(getString(R.string.flow_control_key), null);
+		if (sFlowControl != null) {
+			int newFlowControl = Integer.valueOf(sFlowControl);
+			if (flowControl != newFlowControl) {
+				flowControl = newFlowControl;
+				changed = true;
+			}
 		}
+
 		echoEnabled = preferences.getBoolean(getString(R.string.echo_key), false);
 		return changed;
 	}
@@ -438,7 +639,9 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 				os.close();
 			if (is != null)
 				is.close();
-		} catch (IOException e) { }
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		serialPort = null;
 		os = null;
 		is = null;
@@ -450,7 +653,7 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 	private void openConnection() {
 		if (!initializeSerialPort())
 			return;
-		clearConsole(clearConsoleButton);
+		clearConsole();
 		connected = true;
 		handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
 		handler.sendEmptyMessage(UPDATE_STATUS_TEXT);
@@ -459,43 +662,41 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 
 	/**
 	 * Clears the contents of the serial console.
-	 * 
-	 * @param view View which called this method.
 	 */
-	public void clearConsole(View view) {
+	public void clearConsole() {
 		console.setText("");
 	}
 	
 	/**
 	 * Clears the text to be sent in the input text control.
-	 * 
-	 * @param view View which called this method.
 	 */
-	public void clearInputText(View view) {
+	public void clearInputText() {
 		inputText.setText("");
 	}
 
 	/**
 	 * Starts the serial console preferences activity.
-	 * 
-	 * @param view View which called this method.
 	 */
-    public void openPreferencesActivity(View view) {
-    	startActivityForResult(new Intent(this,Preferences.class), PREFERENCES_ACTIVITY_ID);
+    public void openPreferencesActivity() {
+    	startActivityForResult(new Intent(this, Preferences.class), PREFERENCES_ACTIVITY_ID);
     }
     
     /**
      * Updates serial console status text.
      */
     private void updateStatusMessage() {
-    	String text = "";
+    	String text;
     	if (connected)
     		text = "PORT OPEN @ ";
     	else
     		text = "PORT CLOSED @ ";
-    	text += port + " - PARAMS: " + baudRate + ", " + dataBits + ", " +
-    			stopBits + ", " + getParityString() + ", " + getFlowControlString() +
-    			" - Echo ";
+    	text += port + " - PARAMS: "
+				+ baudRate + ", "
+				+ dataBits + ", "
+    			+ stopBits + ", "
+				+ getParityString() + ", "
+				+ getFlowControlString()
+    			+ " - Echo ";
     	if (echoEnabled)
     		text += "enabled";
     	else
@@ -538,88 +739,6 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
     		handler.sendEmptyMessage(DISABLE_SEND);
     	handler.sendEmptyMessage(UPDATE_STATUS_TEXT);
     	handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
-    }
-    
-    /*
-     * (non-Javadoc)
-     * @see android.app.Activity#onActivityResult(int, int, android.content.Intent)
-     */
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-    	super.onActivityResult(requestCode, resultCode, data);
-    	if (requestCode != PREFERENCES_ACTIVITY_ID)
-    		return;
-    	if (loadPreferences()) {
-    		if (connected)
-    			closeConnection();
-    		openConnection();
-    	}
-    	// Connect button status is lost after executing another activity, restore it.
-    	handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
-    	handler.sendEmptyMessage(UPDATE_STATUS_TEXT);
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
-     */
-    protected void onSaveInstanceState(Bundle outState) {
-    	super.onSaveInstanceState(outState);
-    	outState.putBoolean(CONNECTION_STATUS, connected);
-    	outState.putString(CONSOLE_TEXT, console.getText().toString());
-    	outState.putString(TEXT_TO_SEND, inputText.getText().toString());
-    }
-    
-	/*
-	 * (non-Javadoc)
-	 * @see android.gnu.io.SerialPortEventListener#serialEvent(android.gnu.io.SerialPortEvent)
-	 */
-    public void serialEvent(SerialPortEvent ev) {
-    	String message = null;
-    	switch (ev.getEventType()) {
-    	case SerialPortEvent.BI:
-    		message = "Break interrupt received.";
-    		break;
-    	case SerialPortEvent.CD:
-    		closeConnection();
-    		message = "Carrier detect received.";
-    		break;
-    	case SerialPortEvent.CTS:
-    		message = "CTS line activated.";
-    		break;
-    	case SerialPortEvent.DSR:
-    		message = "DSR line activated.";
-    		break;
-    	case SerialPortEvent.RI:
-    		message = "Ring indicator received.";
-    		break;	
-    	case SerialPortEvent.FE:
-    		message = "Received framing error.";
-    		break;
-    	case SerialPortEvent.PE:
-    		message = "Received parity error.";
-    		break;
-    	case SerialPortEvent.OE:
-    		closeConnection();
-    		message = "Connection Closed: buffer overrun error.";
-    		break;
-    	case SerialPortEvent.DATA_AVAILABLE:
-    		try {
-    			is.available();
-    		} catch (Exception e) {
-    			// This only happens with USB connections but just in case
-    			closeConnection();
-    			message = "Connection Closed: Connection closed in the other side.";
-    			break;
-    		}
-    		readData();
-    		break;
-    	}
-    	if (message != null) {
-    		Message msg = new Message();
-    		msg.what = SHOW_TOAST;
-    		msg.obj = message;
-    		handler.sendMessage(msg);
-    	}
     }
     
     /**
