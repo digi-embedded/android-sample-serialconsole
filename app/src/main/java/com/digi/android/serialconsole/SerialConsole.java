@@ -591,7 +591,7 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 			}
 		}
 
-		String sStopBits = preferences.getString(getString(R.string.data_bits_key), null);
+		String sStopBits = preferences.getString(getString(R.string.stop_bits_key), null);
 		if (sStopBits != null) {
 			int newStopBits = Integer.valueOf(sStopBits);
 			if (stopBits != newStopBits) {
@@ -600,7 +600,7 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 			}
 		}
 
-		String sParity = preferences.getString(getString(R.string.data_bits_key), null);
+		String sParity = preferences.getString(getString(R.string.parity_key), null);
 		if (sParity != null) {
 			int newParity = Integer.valueOf(sParity);
 			if (parity != newParity) {
