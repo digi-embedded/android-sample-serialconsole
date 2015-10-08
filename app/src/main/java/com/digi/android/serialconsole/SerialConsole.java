@@ -9,6 +9,7 @@
  * Digi International Inc. 11001 Bren Road East, Minnetonka, MN 55343
  * =======================================================================
  */
+
 package com.digi.android.serialconsole;
 
 import java.io.IOException;
@@ -152,41 +153,6 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 		}
 	}
 
-	/*public Handler handler = new Handler() {
-
-		@Override
-        public void handleMessage(Message msg) {
-        	switch (msg.what) {
-        	case DATA_RECEIVED:
-        		String message = processBuffer((byte[]) msg.obj);
-        		console.append(message);
-        		scroll.fullScroll(View.FOCUS_DOWN);
-        		break;
-        	case BACKSPACE_RECEIVED:
-        		String text = console.getText().toString();
-        		if (text.length() > 0)
-        			console.setText(text.substring(0, text.length() - 1));
-        		scroll.fullScroll(View.FOCUS_DOWN);
-        		break;
-        	case UPDATE_STATUS_TEXT:
-        		updateStatusMessage();
-        		break;
-        	case SHOW_TOAST:
-        		Toast.makeText(getBaseContext(), (String)msg.obj, Toast.LENGTH_SHORT).show();
-        		break;
-        	case DISABLE_SEND:
-        		sendButton.setEnabled(false);
-        		break;
-        	case ENABLE_SEND:
-        		sendButton.setEnabled(true);
-        		break;
-        	case TOGGLE_CONNECT_BUTTON:
-        		toggleConnectButton();
-        		break;
-        	}
-        }
-	};*/
-	
     /*
      * (non-Javadoc)
      * @see android.app.Activity#onCreate(android.os.Bundle)
@@ -328,7 +294,7 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
      * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
      */
 	@Override
-	protected void onSaveInstanceState(@android.support.annotation.NonNull Bundle outState) {
+	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 		outState.putBoolean(CONNECTION_STATUS, connected);
 		outState.putString(CONSOLE_TEXT, console.getText().toString());
