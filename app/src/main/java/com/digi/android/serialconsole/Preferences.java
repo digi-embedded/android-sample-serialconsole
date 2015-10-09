@@ -61,10 +61,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	
 	private HashMap<String, ListPreference> listPreferences = new HashMap<String, ListPreference>();
 
-	/*
-	 * (non-Javadoc)
-	 * @see android.preference.PreferenceActivity#onCreate(android.os.Bundle)
-	 */
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -84,10 +80,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		});
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see android.content.SharedPreferences.OnSharedPreferenceChangeListener#onSharedPreferenceChanged(android.content.SharedPreferences, java.lang.String)
-	 */
 	@Override
 	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
 		ListPreference listPref = listPreferences.get(key);

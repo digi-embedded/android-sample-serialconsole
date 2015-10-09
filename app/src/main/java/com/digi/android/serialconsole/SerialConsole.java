@@ -153,10 +153,6 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 		}
 	}
 
-    /*
-     * (non-Javadoc)
-     * @see android.app.Activity#onCreate(android.os.Bundle)
-     */
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -169,20 +165,12 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
         	restoreStatus(savedInstanceState);
     }
 
-	/*
-     * (non-Javadoc)
-     * @see android.app.Activity#onDestroy()
-     */
 	@Override
 	public void onDestroy() {
 		closeConnection();
 		super.onDestroy();
 	}
 
-	/*
-     * (non-Javadoc)
-     * @see android.app.Activity#onCreateOptionsMenu(android.view.Menu)
-     */
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
@@ -190,10 +178,6 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 		return true;
 	}
 
-	/*
-     * (non-Javadoc)
-     * @see android.app.Activity#onOptionsItemSelected(android.view.MenuItem)
-     */
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		// Connect button status is lost after executing another activity,
@@ -214,10 +198,6 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see android.gnu.io.SerialPortEventListener#serialEvent(android.gnu.io.SerialPortEvent)
-	 */
 	@Override
 	public void serialEvent(SerialPortEvent ev) {
 		String message = null;
@@ -267,10 +247,6 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see android.app.Activity#onActivityResult(int, int, android.content.Intent)
-	 */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
@@ -289,10 +265,6 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 		handler.sendEmptyMessage(UPDATE_STATUS_TEXT);
 	}
 
-	/*
-     * (non-Javadoc)
-     * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
-     */
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
