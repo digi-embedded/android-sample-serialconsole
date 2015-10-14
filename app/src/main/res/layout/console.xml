@@ -1,124 +1,137 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://schemas.android.com/tools"
-              android:orientation="vertical"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:background="@color/dark_gray">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark_gray"
+    android:orientation="vertical">
+
     <ScrollView
-	    android:id="@+id/scroll_console_terminal"
-	    android:layout_width="fill_parent"
-	    android:layout_height="0dp"
-	    android:fadeScrollbars="false"
-	    android:padding="10dip"
-	    android:layout_weight="1"
-	    android:background="@android:color/black">
+        android:id="@+id/scroll_console_terminal"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@android:color/black"
+        android:fadeScrollbars="false"
+        android:padding="10dp">
+
         <TextView
             android:id="@+id/console_terminal"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@android:color/white"/>
+            android:textColor="@android:color/white" />
     </ScrollView>
+
     <ImageView
-            android:id="@+id/separator"
-            android:layout_height="1dip"
-            android:layout_width="fill_parent"
-            android:layout_gravity="center"
-            android:adjustViewBounds="true"
-            android:layout_marginBottom="5dip"
-            android:background="@android:color/background_light"
-            tools:ignore="ContentDescription"/>
+        android:id="@+id/separator"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="5dp"
+        android:adjustViewBounds="true"
+        android:background="@android:color/background_light"
+        tools:ignore="ContentDescription" />
+
     <LinearLayout
-       android:orientation="horizontal"
-       android:layout_width="fill_parent"
-       android:layout_height="40dip"
-       android:paddingLeft="5dip"
-       android:paddingRight="5dip"
-       android:layout_marginTop="5dip"
-       android:layout_margin="0dip"
-       android:background="@color/dark_gray">
-       <ImageButton
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_margin="0dp"
+        android:layout_marginTop="5dp"
+        android:background="@color/dark_gray"
+        android:orientation="horizontal"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp">
+
+        <ImageButton
             android:id="@+id/connect_button"
+            android:layout_width="50dp"
             android:layout_height="wrap_content"
-            android:layout_width="50dip"
-            android:scaleType="centerInside"
             android:background="@android:drawable/btn_default_small"
-            android:src="@drawable/port_disconnected"
-            android:contentDescription="@string/open_terminal"/>
-       <ImageButton
+            android:contentDescription="@string/open_terminal"
+            android:scaleType="centerInside"
+            android:src="@drawable/port_disconnected" />
+
+        <ImageButton
             android:id="@+id/clear_console_button"
-            android:layout_height="fill_parent"
             android:layout_width="wrap_content"
-            android:scaleType="centerInside"
+            android:layout_height="match_parent"
             android:adjustViewBounds="true"
-            android:src="@android:drawable/ic_menu_delete"
             android:background="@android:drawable/btn_default_small"
-            android:contentDescription="@string/clear_terminal"/>
-       <ImageButton
+            android:contentDescription="@string/clear_terminal"
+            android:scaleType="centerInside"
+            android:src="@android:drawable/ic_menu_delete" />
+
+        <ImageButton
             android:id="@+id/settings_button"
-            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:scaleType="centerInside"
+            android:layout_height="wrap_content"
             android:adjustViewBounds="true"
-            android:src="@android:drawable/ic_menu_manage"
             android:background="@android:drawable/btn_default_small"
-            android:contentDescription="@string/serial_console_preferences"/>
-       <EditText
+            android:contentDescription="@string/serial_console_preferences"
+            android:scaleType="centerInside"
+            android:src="@android:drawable/ic_menu_manage" />
+
+        <EditText
             android:id="@+id/input_text"
             android:layout_width="0dp"
-            android:layout_height="fill_parent"
-            android:hint="@string/text_send"
-            android:layout_marginLeft="3dip"
-            android:layout_marginRight="3dip"
-            android:lines="1"
-            android:layout_weight="1"
-            android:textSize="15sp"
+            android:layout_height="match_parent"
             android:layout_gravity="center"
-            android:background="@android:drawable/editbox_background"/>
-       <ImageButton
+            android:layout_marginLeft="3dp"
+            android:layout_marginRight="3dp"
+            android:layout_weight="1"
+            android:background="@android:drawable/editbox_background"
+            android:hint="@string/text_send"
+            android:lines="1"
+            android:textSize="15sp" />
+
+        <ImageButton
             android:id="@+id/clear_send_text_button"
-            android:layout_height="fill_parent"
             android:layout_width="wrap_content"
-            android:scaleType="centerInside"
+            android:layout_height="match_parent"
             android:layout_gravity="center"
             android:adjustViewBounds="true"
-            android:src="@android:drawable/ic_input_delete"
             android:background="@android:drawable/btn_default_small"
-            android:contentDescription="@string/clear_text_send"/>
-       <Button
+            android:contentDescription="@string/clear_text_send"
+            android:scaleType="centerInside"
+            android:src="@android:drawable/ic_input_delete" />
+
+        <Button
             android:id="@+id/send_terminal_button"
-            android:layout_height="fill_parent"
-            android:layout_width="80dip"
+            android:layout_width="80dp"
+            android:layout_height="match_parent"
             android:layout_gravity="center"
-            android:text="@string/send_terminal"
             android:background="@android:drawable/btn_default_small"
-            android:enabled="false"/>
+            android:enabled="false"
+            android:text="@string/send_terminal" />
     </LinearLayout>
+
     <LinearLayout
-       android:orientation="horizontal"
-       android:layout_width="fill_parent"
-       android:layout_height="20dip"
-       android:paddingLeft="5dip"
-       android:paddingRight="5dip"
-       android:layout_margin="0dip"
-       android:background="@color/dark_gray">
-       <TextView
-       		android:id="@+id/status_label"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:layout_margin="0dp"
+        android:background="@color/dark_gray"
+        android:orientation="horizontal"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp">
+
+        <TextView
+            android:id="@+id/status_label"
             android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
-            android:layout_marginLeft="5dip"
-            android:layout_marginRight="5dip"
-            android:textSize="13sp"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
             android:text="@string/serial_console_status"
-            android:textStyle="bold"
-            android:textColor="@android:color/white"/>
-       <TextView
-       		android:id="@+id/status_text"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:layout_marginStart="5dip"
+            android:textColor="@android:color/white"
             android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/status_text"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginStart="5dp"
             android:text="@string/initial_status"
-            android:textColor="@android:color/white"/>
+            android:textColor="@android:color/white"
+            android:textSize="13sp" />
     </LinearLayout>
 </LinearLayout>

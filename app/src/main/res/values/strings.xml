@@ -1,119 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-<string name="app_name">Serial Console</string>
+    <string name="app_name">Serial Console Sample</string>
 
-<string name="serial_port">Serial Port General</string>
-<string name="serial_parameters">Serial Connection Parameters</string>
+    <string name="serial_port">Serial Port General</string>
+    <string name="serial_parameters">Serial Connection Parameters</string>
 
-<string name="serial_port_key">serialport</string>
-<string name="baud_rate_key">baudrate</string>
-<string name="data_bits_key">databits</string>
-<string name="stop_bits_key">stopbits</string>
-<string name="parity_key">parity</string>
-<string name="flow_control_key">flowcontrol</string>
-<string name="echo_key">echo</string>
+    <string name="serial_port_key">serialport</string>
+    <string name="baud_rate_key">baudrate</string>
+    <string name="data_bits_key">databits</string>
+    <string name="stop_bits_key">stopbits</string>
+    <string name="parity_key">parity</string>
+    <string name="flow_control_key">flowcontrol</string>
+    <string name="echo_key">echo</string>
 
-<string name="serial_port_default">/dev/ttymxc0</string>
-<string name="baud_rate_default">9600</string>
-<string name="data_bits_default">8</string>
-<string name="stop_bits_default">1</string>
-<string name="parity_default">0</string>
-<string name="flow_control_default">0</string>
+    <string name="serial_port_default">/dev/ttymxc0</string>
+    <string name="baud_rate_default">9600</string>
+    <string name="data_bits_default">8</string>
+    <string name="stop_bits_default">1</string>
+    <string name="parity_default">0</string>
+    <string name="flow_control_default">0</string>
 
-<string name="enable_echo">Enable local echo</string>
+    <string name="enable_echo">Enable local echo</string>
 
-<string name="echo_enabled">Local echo is enabled</string>
-<string name="echo_disabled">Local echo is disabled</string>
+    <string name="echo_enabled">Local echo is enabled</string>
+    <string name="echo_disabled">Local echo is disabled</string>
 
-<string-array name="serial_port_values">
-    <item>/dev/ttymxc0</item>
-    <item>/dev/ttymxc1</item>
-    <item>/dev/ttymxc2</item>
-</string-array>
+    <string-array name="serial_port_values">
+        <item>/dev/ttymxc0</item>
+        <item>/dev/ttymxc1</item>
+        <item>/dev/ttymxc2</item>
+    </string-array>
 
-<string-array name="baud_rate_values">
-    <item>2400</item>
-    <item>4800</item>
-    <item>9600</item>
-    <item>19200</item>
-    <item>38400</item>
-    <item>57600</item>
-    <item>115200</item>
-</string-array>
+    <string-array name="baud_rate_values">
+        <item>2400</item>
+        <item>4800</item>
+        <item>9600</item>
+        <item>19200</item>
+        <item>38400</item>
+        <item>57600</item>
+        <item>115200</item>
+    </string-array>
 
-<string-array name="data_bits_values">
-    <item>5</item>
-    <item>6</item>
-    <item>7</item>
-    <item>8</item>
-</string-array>
+    <string-array name="data_bits_values">
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+    </string-array>
 
-<string-array name="stop_bits_values">
-    <item>1</item>
-    <item>2</item>
-</string-array>
+    <string-array name="stop_bits_values">
+        <item>1</item>
+        <item>2</item>
+    </string-array>
 
-<string-array name="parity_entries">
-    <item>NONE</item>
-    <item>ODD</item>
-    <item>EVEN</item>
-    <item>MARK</item>
-    <item>SPACE</item>
-</string-array>
+    <string-array name="parity_entries">
+        <item>NONE</item>
+        <item>ODD</item>
+        <item>EVEN</item>
+        <item>MARK</item>
+        <item>SPACE</item>
+    </string-array>
 
-<string-array name="parity_values">
-    <item>0</item>
-    <item>1</item>
-    <item>2</item>
-    <item>3</item>
-    <item>4</item>
-</string-array>
+    <string-array name="parity_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+    </string-array>
 
-<string-array name="flow_control_entries">
-    <item>NONE</item>
-    <item>RTSCTS_IN</item>
-    <item>RTSCTS_OUT</item>
-    <item>XONXOFF_IN</item>
-    <item>XONXOFF_OUT</item>
-</string-array>
+    <string-array name="flow_control_entries">
+        <item>NONE</item>
+        <item>RTSCTS_IN</item>
+        <item>RTSCTS_OUT</item>
+        <item>XONXOFF_IN</item>
+        <item>XONXOFF_OUT</item>
+    </string-array>
 
-<string-array name="flow_control_values">
-    <item>0</item>
-    <item>1</item>
-    <item>2</item>
-    <item>4</item>
-    <item>8</item>
-</string-array>
+    <string-array name="flow_control_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>4</item>
+        <item>8</item>
+    </string-array>
 
-<string name="serial_console_preferences">Serial Console Preferences</string>
-<string name="serial_port_preference">Serial Port to use</string>
-<string name="data_bits_preference">Data Bits</string>
-<string name="stop_bits_preference">Stop Bits</string>
-<string name="baud_rate_preference">Baud Rate</string>
-<string name="parity_preference">Parity</string>
-<string name="flow_control_preference">Flow Control</string>
+    <string name="serial_console_preferences">Serial Console Preferences</string>
+    <string name="serial_port_preference">Serial Port to use</string>
+    <string name="data_bits_preference">Data Bits</string>
+    <string name="stop_bits_preference">Stop Bits</string>
+    <string name="baud_rate_preference">Baud Rate</string>
+    <string name="parity_preference">Parity</string>
+    <string name="flow_control_preference">Flow Control</string>
 
-<string name="close">Close</string>
+    <string name="close">Close</string>
 
-<string name="serial_console_status">Serial Console Status: </string>
+    <string name="serial_console_status">Serial Console Status: </string>
 
-<string name="open">Open</string>
-<string name="closed">Closed</string>
+    <string name="open">Open</string>
+    <string name="closed">Closed</string>
 
-<string name="preferences_description">Configure the serial port and connection parameters to use in the Serial Console:</string>
+    <string name="preferences_description">Configure the serial port and connection parameters to use in the Serial Console:</string>
 
-<string name="initial_status">Ready to connect...</string>
+    <string name="initial_status">Ready to connect&#8230;</string>
 
-<string name="initial_text_console_terminal">Serial Port Started.....\n</string>
-<string name="send_terminal">SEND</string>
-<string name="close_terminal">Close Console</string>
-<string name="open_terminal">Open Console</string>
-<string name="settings">Settings</string>
-<string name="clear_terminal">Clear Terminal</string>
-<string name="clear_text_send">Clear</string>
-<string name="text_send">Text to send...</string>
-<color name="dark_gray">#5f5f5f</color>
-<color name="light_red">#ffadad</color>
-<color name="light_green">#9dff8a</color>
+    <string name="initial_text_console_terminal">Serial Port Started.....\n</string>
+    <string name="send_terminal">SEND</string>
+    <string name="close_terminal">Close Console</string>
+    <string name="open_terminal">Open Console</string>
+    <string name="settings">Settings</string>
+    <string name="clear_terminal">Clear Terminal</string>
+    <string name="clear_text_send">Clear</string>
+    <string name="text_send">Text to send&#8230;</string>
+
+    <color name="dark_gray">#5f5f5f</color>
+    <color name="light_red">#ffadad</color>
+    <color name="light_green">#9dff8a</color>
 
 </resources>
