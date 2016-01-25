@@ -21,17 +21,17 @@ import java.util.TooManyListenersException;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.gnu.io.CommPortIdentifier;
-import android.gnu.io.NoSuchPortException;
-import android.gnu.io.PortInUseException;
-import android.gnu.io.SerialPort;
-import android.gnu.io.SerialPortEvent;
-import android.gnu.io.SerialPortEventListener;
-import android.gnu.io.UnsupportedCommOperationException;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.serial.ISerialPortEventListener;
+import android.serial.NoSuchPortException;
+import android.serial.PortInUseException;
+import android.serial.SerialPort;
+import android.serial.SerialPortEvent;
+import android.serial.SerialPortManager;
+import android.serial.UnsupportedCommOperationException;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -54,7 +54,7 @@ import android.widget.Toast;
  * <p>For a complete description on the example, refer to the 'README.md' file
  * included in the example directory.</p>
  */
-public class SerialConsole extends Activity implements SerialPortEventListener {
+public class SerialConsole extends Activity implements ISerialPortEventListener {
 	
 	// Constants.
 	private static final int DATA_RECEIVED = 0;
@@ -98,7 +98,9 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 	private InputStream is;
 	
 	private OutputStream os;
-	
+
+	private SerialPortManager manager;
+
 	private SerialPort serialPort;
 	
 	private String port;
@@ -112,7 +114,7 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 		private final WeakReference<SerialConsole> wActivity;
 
 		IncomingHandler(SerialConsole activity) {
-			wActivity = new WeakReference<SerialConsole>(activity);
+			wActivity = new WeakReference<>(activity);
 		}
 
 		@Override
@@ -157,6 +159,8 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.console);
+		
+		manager = (SerialPortManager)getSystemService(SERIAL_PORT_SERVICE);
 		
 		initializeUI();
 		if (savedInstanceState == null)
@@ -343,9 +347,8 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 	private boolean initializeSerialPort() {
 		String error = "Connection Error: ";
 		try {
-			CommPortIdentifier identifier = CommPortIdentifier.getPortIdentifier(port);
-			serialPort = (SerialPort)identifier.open("SerialConsolePort", 3000);
-			serialPort.addEventListener(this);
+			serialPort = manager.openSerialPort(port, baudRate, dataBits, stopBits, parity, flowControl, 3000);
+			serialPort.registerEventListener(this);
 			serialPort.notifyOnDataAvailable(true);
 			serialPort.notifyOnCTS(true);
 			serialPort.notifyOnDSR(true);
@@ -355,8 +358,7 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 			serialPort.notifyOnFramingError(true);
 			serialPort.notifyOnOverrunError(true);
 			serialPort.notifyOnParityError(true);
-			serialPort.setSerialPortParams(baudRate, dataBits, stopBits, parity);
-			serialPort.setFlowControlMode(flowControl);
+			serialPort.setPortParameters(baudRate, dataBits, stopBits, parity, flowControl);
 			is = serialPort.getInputStream();
 			os = serialPort.getOutputStream();
 			return true;
@@ -570,7 +572,7 @@ public class SerialConsole extends Activity implements SerialPortEventListener {
 		handler.sendEmptyMessage(UPDATE_STATUS_TEXT);
 		handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
 		if (serialPort != null)
-			serialPort.removeEventListener();
+			serialPort.unregisterEventListener();
 		if (serialPort != null)
 			serialPort.close();
 		try {
