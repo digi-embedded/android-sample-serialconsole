@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.digi.android.serialconsole;
+package com.digi.android.sample.serialconsole;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,13 +29,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
-import android.serial.ISerialPortEventListener;
-import android.serial.NoSuchPortException;
-import android.serial.PortInUseException;
-import android.serial.SerialPort;
-import android.serial.SerialPortEvent;
-import android.serial.SerialPortManager;
-import android.serial.UnsupportedCommOperationException;
+import com.digi.android.serial.ISerialPortEventListener;
+import com.digi.android.serial.NoSuchPortException;
+import com.digi.android.serial.PortInUseException;
+import com.digi.android.serial.SerialPort;
+import com.digi.android.serial.SerialPortEvent;
+import com.digi.android.serial.SerialPortManager;
+import com.digi.android.serial.UnsupportedCommOperationException;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -163,8 +163,8 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.console);
-		
-		manager = (SerialPortManager)getSystemService(SERIAL_PORT_SERVICE);
+
+		manager = new SerialPortManager(this);
 		
 		initializeUI();
 		if (savedInstanceState == null)
@@ -210,33 +210,33 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 	public void serialEvent(SerialPortEvent ev) {
 		String message = null;
 		switch (ev.getEventType()) {
-			case SerialPortEvent.BI:
+			case BI:
 				message = "Break interrupt received.";
 				break;
-			case SerialPortEvent.CD:
+			case CD:
 				closeConnection();
 				message = "Carrier detect received.";
 				break;
-			case SerialPortEvent.CTS:
+			case CTS:
 				message = "CTS line activated.";
 				break;
-			case SerialPortEvent.DSR:
+			case DSR:
 				message = "DSR line activated.";
 				break;
-			case SerialPortEvent.RI:
+			case RI:
 				message = "Ring indicator received.";
 				break;
-			case SerialPortEvent.FE:
+			case FE:
 				message = "Received framing error.";
 				break;
-			case SerialPortEvent.PE:
+			case PE:
 				message = "Received parity error.";
 				break;
-			case SerialPortEvent.OE:
+			case OE:
 				closeConnection();
 				message = "Connection Closed: buffer overrun error.";
 				break;
-			case SerialPortEvent.DATA_AVAILABLE:
+			case DATA_AVAILABLE:
 				try {
 					if (is.available() > 0)
 						readData();

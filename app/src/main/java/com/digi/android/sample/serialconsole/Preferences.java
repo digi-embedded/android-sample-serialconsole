@@ -14,21 +14,21 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.digi.android.serialconsole;
+package com.digi.android.sample.serialconsole;
 
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
-import android.gnu.io.CommPortIdentifier;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.PreferenceActivity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+
+import com.digi.android.serial.SerialPortManager;
 
 public class Preferences extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 
@@ -51,23 +51,15 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		listPreferencesKeys.add(FLOW_CONTROL_KEY);
 	}
 	
-	// Search for available ports and store them in static array.
-	private static CharSequence[] portList;
-	static {
-		Enumeration<?> availablePorts = CommPortIdentifier.getPortIdentifiers();
-		ArrayList<String> ports = new ArrayList<String>();
-		while (availablePorts.hasMoreElements())
-			ports.add(((CommPortIdentifier)availablePorts.nextElement()).getName());
-		portList = new String[ports.size()];
-		for (int i = 0; i< ports.size(); i++)
-			portList[i] = ports.get(i);
-	}
-	
 	private HashMap<String, ListPreference> listPreferences = new HashMap<String, ListPreference>();
+
+	private static SerialPortManager manager;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		manager = new SerialPortManager(this);
 		
 		addPreferencesFromResource(R.xml.preferences);
 		setContentView(R.layout.preferences_dialog);
@@ -122,6 +114,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	 * @param pref Serial port preference.
 	 */
 	private void fillSerialPortPreference(ListPreference pref) {
+		CharSequence[] portList = manager.listSerialPorts();
 		if (portList.length > 0)
 			pref.setDefaultValue(portList[0]);
 		if (pref.getValue() == null || pref.getValue().equals(""))
