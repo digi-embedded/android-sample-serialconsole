@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014-2016, Digi International Inc. <support@digi.com>
+/*
+ * Copyright (c) 2014-2021, Digi International Inc. <support@digi.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -109,7 +109,7 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 	
 	private String port;
 
-	private IncomingHandler handler = new IncomingHandler(this);
+	private final IncomingHandler handler = new IncomingHandler(this);
 
 	/**
 	 * Handler to manage UI calls from different threads.
@@ -191,19 +191,18 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 		// Connect button status is lost after executing another activity,
 		// restore it.
 		handler.sendEmptyMessage(TOGGLE_CONNECT_BUTTON);
-		switch (item.getItemId()) {
-			case R.id.menu_option_close_terminal:
-				finish();
-				return true;
-			case R.id.menu_option_clear_terminal:
-				clearConsole();
-				return true;
-			case R.id.menu_option_settings_terminal:
-				openPreferencesActivity();
-				return true;
-			default:
-				return super.onOptionsItemSelected(item);
+		int itemId = item.getItemId();
+		if (itemId == R.id.menu_option_close_terminal) {
+			finish();
+			return true;
+		} else if (itemId == R.id.menu_option_clear_terminal) {
+			clearConsole();
+			return true;
+		} else if (itemId == R.id.menu_option_settings_terminal) {
+			openPreferencesActivity();
+			return true;
 		}
+		return super.onOptionsItemSelected(item);
 	}
 
 	@Override
@@ -285,12 +284,12 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 	 * Initializes all graphic UI elements and sets the required listeners.
 	 */
 	private void initializeUI() {
-		console = (TextView)findViewById(R.id.console_terminal);
-		statusText = (TextView)findViewById(R.id.status_text);
-		scroll = (ScrollView)findViewById(R.id.scroll_console_terminal);
-		inputText = (EditText)findViewById(R.id.input_text);
+		console = findViewById(R.id.console_terminal);
+		statusText = findViewById(R.id.status_text);
+		scroll = findViewById(R.id.scroll_console_terminal);
+		inputText = findViewById(R.id.input_text);
 
-		sendButton = (Button)findViewById(R.id.send_terminal_button);
+		sendButton = findViewById(R.id.send_terminal_button);
 		sendButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View view) {
@@ -298,7 +297,7 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 			}
 		});
 
-		ImageButton settingsButton = (ImageButton) findViewById(R.id.settings_button);
+		ImageButton settingsButton = findViewById(R.id.settings_button);
 		settingsButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View view) {
@@ -306,7 +305,7 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 			}
 		});
 
-		ImageButton clearConsoleButton = (ImageButton)findViewById(R.id.clear_console_button);
+		ImageButton clearConsoleButton = findViewById(R.id.clear_console_button);
 		clearConsoleButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View view) {
@@ -314,7 +313,7 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 			}
 		});
 
-		ImageButton clearInputButton = (ImageButton)findViewById(R.id.clear_send_text_button);
+		ImageButton clearInputButton = findViewById(R.id.clear_send_text_button);
 		clearInputButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View view) {
@@ -322,7 +321,7 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 			}
 		});
 
-		connectButton = (ImageButton)findViewById(R.id.connect_button);
+		connectButton = findViewById(R.id.connect_button);
 		connectButton.setOnTouchListener(new OnTouchListener() {
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
@@ -437,7 +436,7 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 			}
 			// Check if last byte in buffer was Carrier Return
 			// and if so append Line Feed.
-			if (previousWasCR)
+			if (previousWasCR && os != null)
 				os.write((byte)10);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -520,7 +519,7 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 
 		String sBaudRate = preferences.getString(getString(R.string.baud_rate_key), null);
 		if (sBaudRate != null) {
-			int newBaudRate = Integer.valueOf(sBaudRate);
+			int newBaudRate = Integer.parseInt(sBaudRate);
 			if (baudRate != newBaudRate) {
 				baudRate = newBaudRate;
 				changed = true;
@@ -529,7 +528,7 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 
 		String sDataBits = preferences.getString(getString(R.string.data_bits_key), null);
 		if (sDataBits != null) {
-			int newDataBits = Integer.valueOf(sDataBits);
+			int newDataBits = Integer.parseInt(sDataBits);
 			if (dataBits != newDataBits) {
 				dataBits = newDataBits;
 				changed = true;
@@ -538,7 +537,7 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 
 		String sStopBits = preferences.getString(getString(R.string.stop_bits_key), null);
 		if (sStopBits != null) {
-			int newStopBits = Integer.valueOf(sStopBits);
+			int newStopBits = Integer.parseInt(sStopBits);
 			if (stopBits != newStopBits) {
 				stopBits = newStopBits;
 				changed = true;
@@ -547,7 +546,7 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 
 		String sParity = preferences.getString(getString(R.string.parity_key), null);
 		if (sParity != null) {
-			int newParity = Integer.valueOf(sParity);
+			int newParity = Integer.parseInt(sParity);
 			if (parity != newParity) {
 				parity = newParity;
 				changed = true;
@@ -556,7 +555,7 @@ public class SerialConsole extends Activity implements ISerialPortEventListener 
 
 		String sFlowControl = preferences.getString(getString(R.string.flow_control_key), null);
 		if (sFlowControl != null) {
-			int newFlowControl = Integer.valueOf(sFlowControl);
+			int newFlowControl = Integer.parseInt(sFlowControl);
 			if (flowControl != newFlowControl) {
 				flowControl = newFlowControl;
 				changed = true;

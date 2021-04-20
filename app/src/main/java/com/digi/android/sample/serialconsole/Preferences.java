@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014-2016, Digi International Inc. <support@digi.com>
+/*
+ * Copyright (c) 2014-2021, Digi International Inc. <support@digi.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -39,9 +39,9 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	private final static int STOP_BITS_KEY = R.string.stop_bits_key;
 	private final static int PARITY_KEY = R.string.parity_key;
 	private final static int FLOW_CONTROL_KEY = R.string.flow_control_key;
-	
+
 	// Variables.
-	private static ArrayList<Integer> listPreferencesKeys = new ArrayList<Integer>();
+	private static final ArrayList<Integer> listPreferencesKeys = new ArrayList<>();
 	static {
 		listPreferencesKeys.add(SERIAL_PORT_KEY);
 		listPreferencesKeys.add(BAUD_RATE_KEY);
@@ -50,8 +50,8 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		listPreferencesKeys.add(PARITY_KEY);
 		listPreferencesKeys.add(FLOW_CONTROL_KEY);
 	}
-	
-	private HashMap<String, ListPreference> listPreferences = new HashMap<String, ListPreference>();
+
+	private final HashMap<String, ListPreference> listPreferences = new HashMap<>();
 
 	private static SerialPortManager manager;
 
@@ -67,7 +67,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		setTitle(getString(R.string.serial_console_preferences));
 		initializePreferences();
 
-		Button closeButton = (Button)super.findViewById(R.id.close_button);
+		Button closeButton = super.findViewById(R.id.close_button);
 		closeButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -92,13 +92,13 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		sharedPrefs.registerOnSharedPreferenceChangeListener(this);
 		for (int prefKey:listPreferencesKeys) {
 			ListPreference pref = (ListPreference)getPreferenceManager().findPreference(getString(prefKey));
-			if (pref.getKey().equals(getString(SERIAL_PORT_KEY)))
+			if (pref != null && pref.getKey().equals(getString(SERIAL_PORT_KEY)))
 				fillSerialPortPreference(pref);
 			listPreferences.put(getString(prefKey), pref);  
 			onSharedPreferenceChanged(sharedPrefs, getString(prefKey));  
 		}
 	}
-	
+
 	/**
 	 * Handles what happens when close button is pressed.
 	 */
@@ -115,8 +115,9 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	 */
 	private void fillSerialPortPreference(ListPreference pref) {
 		CharSequence[] portList = manager.listSerialPorts();
-		if (portList.length > 0)
-			pref.setDefaultValue(portList[0]);
+		if (portList.length == 0)
+			return;
+		pref.setDefaultValue(portList[0]);
 		if (pref.getValue() == null || pref.getValue().equals(""))
 			pref.setValue(portList[0].toString());
 		pref.setEntries(portList);
